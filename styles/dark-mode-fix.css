@@ -1,0 +1,51 @@
+/* Explicit dark mode styles */
+html.dark {
+  background-color: #111827; /* dark:bg-gray-900 */
+  color: #f3f4f6; /* dark:text-gray-100 */
+}
+
+html.dark body {
+  background-color: #111827; /* dark:bg-gray-900 */
+  color: #f3f4f6; /* dark:text-gray-100 */
+}
+
+/* Test classes for debugging */
+.dark-mode-test-box {
+  border: 3px solid #3b82f6;
+  padding: 1.5rem;
+  margin: 1rem;
+  border-radius: 0.5rem;
+}
+
+.dark-mode-test-box {
+  background-color: white;
+  color: #1f2937;
+}
+
+html.dark .dark-mode-test-box {
+  background-color: #1f2937;
+  color: white;
+}
+
+/* Debug panel */
+.theme-debug-info {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.75);
+  color: white;
+  padding: 0.5rem;
+  font-size: 0.75rem;
+  z-index: 9999;
+}
+
+/* Add stronger theme transitions */
+body, html {
+  transition: background-color 0.5s ease, color 0.5s ease;
+}
+
+*, *::before, *::after {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 0.3s;
+  transition-timing-function: ease;
+} 
