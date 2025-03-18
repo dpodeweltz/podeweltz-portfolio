@@ -4,7 +4,7 @@ import './globals.css';
 import '../styles/dark-mode-fix.css';
 import Navbar from '../components/ui/Navbar';
 import Footer from '../components/ui/Footer';
-import { ThemeProvider } from '../hooks/useTheme';
+import ThemeProvider from '../components/ThemeProvider';
 
 // Load Inter font
 const inter = Inter({ 

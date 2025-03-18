@@ -4,8 +4,8 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { Vector3 } from 'three';
 
 // Node component for better performance
-const Node = ({ position, size, color }) => {
-  const ref = useRef();
+const Node = ({ position, size, color }: { position: Vector3; size: number; color: string }) => {
+  const ref = useRef<any>();
   
   useFrame(() => {
     if (ref.current) {
@@ -23,7 +23,7 @@ const Node = ({ position, size, color }) => {
 };
 
 // Connection line between nodes and mouse
-const Connection = ({ start, end, color, width = 0.01 }) => {
+const Connection = ({ start, end, color, width = 0.01 }: { start: Vector3; end: Vector3; color: string; width?: number }) => {
   // Calculate the distance between points
   const distance = start.distanceTo(end);
   
@@ -34,7 +34,7 @@ const Connection = ({ start, end, color, width = 0.01 }) => {
   const direction = end.clone().sub(start).normalize();
   const quaternion = new Vector3(0, 1, 0).cross(direction).normalize();
   const w = 1 + new Vector3(0, 1, 0).dot(direction);
-  const rotation = [quaternion.x, quaternion.y, quaternion.z, w];
+  const rotation = [quaternion.x, quaternion.y, quaternion.z, w] as [number, number, number, number];
   
   return (
     <mesh position={midPoint.toArray()} quaternion={rotation}>
@@ -74,7 +74,7 @@ const ConnectionWeb = ({
 
   // Mouse position tracking
   useEffect(() => {
-    const handleMouseMove = (event) => {
+    const handleMouseMove = (event: MouseEvent) => {
       // Convert mouse position to normalized device coordinates (-1 to 1)
       const x = (event.clientX / window.innerWidth) * 2 - 1;
       const y = -(event.clientY / window.innerHeight) * 2 + 1;

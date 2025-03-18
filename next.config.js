@@ -5,6 +5,7 @@ const nextConfig = {
     domains: ['via.placeholder.com', 'placehold.co'],
     formats: ['image/avif', 'image/webp'],
   },
+  output: 'export',
 }
 
 module.exports = nextConfig 
