@@ -20,6 +20,7 @@ export default function About() {
                   sizes="(max-width: 768px) 100vw, 50vw"
                   className="object-cover"
                   priority
+                  unoptimized={true}
                 />
               </div>
             </FadeIn>
