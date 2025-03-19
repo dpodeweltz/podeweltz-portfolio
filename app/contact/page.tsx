@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
-import Button from '../../components/ui/Button';
 import PageTransition, { FadeIn } from '../../components/PageTransition';
 
 export default function Contact() {
@@ -13,7 +12,7 @@ export default function Contact() {
     message: ''
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-  const [formStatus, setFormStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+  const [formStatus, setFormStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
   // Form validation
   const validateForm = () => {
@@ -44,30 +43,21 @@ export default function Contact() {
   };
 
   // Handle form submission
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) {
       return;
     }
     
-    setFormStatus('submitting');
-    
-    // Simulate API call
-    try {
-      // In a real application, this would be an API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      setFormStatus('success');
-      setFormData({
-        name: '',
-        email: '',
-        subject: '',
-        message: ''
-      });
-    } catch {
-      setFormStatus('error');
-    }
+    // Simply set success state and clear form
+    setFormStatus('success');
+    setFormData({
+      name: '',
+      email: '',
+      subject: '',
+      message: ''
+    });
   };
   
   // Handle input changes
@@ -152,10 +142,10 @@ export default function Contact() {
                     <div className="ml-3">
                       <p className="text-sm font-medium text-gray-900 dark:text-white">Phone</p>
                       <a 
-                        href="tel:+1234567890" 
+                        href="tel:+12345678900" 
                         className="text-sm text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
                       >
-                        +1 (234) 567-890
+                        +1 (234) 567-8900
                       </a>
                     </div>
                   </div>
@@ -225,12 +215,12 @@ export default function Contact() {
                       </div>
                     </div>
                     <div className="mt-6">
-                      <Button 
+                      <button 
                         onClick={() => setFormStatus('idle')} 
-                        variant="primary"
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                       >
                         Send another message
-                      </Button>
+                      </button>
                     </div>
                   </div>
                 ) : (
@@ -252,8 +242,8 @@ export default function Contact() {
                             autoComplete="name"
                             value={formData.name}
                             onChange={handleChange}
-                            className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                              formErrors.name ? 'border-red-300 text-red-900 focus:border-red-500 focus:ring-red-500' : ''
+                            className={`shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
+                              formErrors.name ? 'border-red-300' : ''
                             }`}
                             aria-invalid={formErrors.name ? 'true' : 'false'}
                             aria-describedby={formErrors.name ? 'name-error' : undefined}
@@ -278,8 +268,8 @@ export default function Contact() {
                             autoComplete="email"
                             value={formData.email}
                             onChange={handleChange}
-                            className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                              formErrors.email ? 'border-red-300 text-red-900 focus:border-red-500 focus:ring-red-500' : ''
+                            className={`shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
+                              formErrors.email ? 'border-red-300' : ''
                             }`}
                             aria-invalid={formErrors.email ? 'true' : 'false'}
                             aria-describedby={formErrors.email ? 'email-error' : undefined}
@@ -303,8 +293,8 @@ export default function Contact() {
                             id="subject"
                             value={formData.subject}
                             onChange={handleChange}
-                            className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                              formErrors.subject ? 'border-red-300 text-red-900 focus:border-red-500 focus:ring-red-500' : ''
+                            className={`shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
+                              formErrors.subject ? 'border-red-300' : ''
                             }`}
                             aria-invalid={formErrors.subject ? 'true' : 'false'}
                             aria-describedby={formErrors.subject ? 'subject-error' : undefined}
@@ -328,8 +318,8 @@ export default function Contact() {
                             rows={4}
                             value={formData.message}
                             onChange={handleChange}
-                            className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                              formErrors.message ? 'border-red-300 text-red-900 focus:border-red-500 focus:ring-red-500' : ''
+                            className={`shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
+                              formErrors.message ? 'border-red-300' : ''
                             }`}
                             aria-invalid={formErrors.message ? 'true' : 'false'}
                             aria-describedby={formErrors.message ? 'message-error' : undefined}
@@ -343,15 +333,12 @@ export default function Contact() {
                       </div>
 
                       <div>
-                        <Button
+                        <button
                           type="submit"
-                          variant="primary"
-                          size="lg"
-                          className="w-full"
-                          isLoading={formStatus === 'submitting'}
+                          className="inline-flex items-center justify-center w-full px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         >
-                          {formStatus === 'submitting' ? 'Sending...' : 'Send Message'}
-                        </Button>
+                          Send Message
+                        </button>
                         
                         {formStatus === 'error' && (
                           <p className="mt-2 text-sm text-red-600 dark:text-red-400">

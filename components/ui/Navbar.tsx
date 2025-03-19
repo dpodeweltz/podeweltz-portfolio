@@ -24,7 +24,7 @@ const Navbar = () => {
     <nav className="fixed w-full z-50 bg-white/80 backdrop-blur-sm dark:bg-gray-900/80" aria-label="Main Navigation">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 flex items-center">
             <Link href="/" className="text-3xl font-bold tracking-normal px-1 bg-gradient-to-r from-blue-600 to-blue-400 dark:from-blue-500 dark:to-blue-300 bg-clip-text text-transparent transition-all hover:scale-105 transform duration-200" aria-label="Go to home page">
               <span className="inline-block px-0.5">D</span><span className="inline-block px-0.5">P</span>
             </Link>
