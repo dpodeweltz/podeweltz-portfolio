@@ -1,8 +1,15 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '../hooks/useTheme';
+
+// Define window.cursorEffectTimeout globally
+declare global {
+  interface Window {
+    cursorEffectTimeout?: number;
+  }
+}
 
 interface CursorEffect3DProps {
   darkColorPalette?: string[];
@@ -22,7 +29,6 @@ export default function CursorEffect3D({
   particleOpacity = 0.6
 }: CursorEffect3DProps) {
   const { isDarkMode } = useTheme();
-  const prevThemeRef = useRef(isDarkMode);
   const [themeKey, setThemeKey] = useState(isDarkMode ? 'dark' : 'light');
   const [mousePosition, setMousePosition] = useState({ 
     x: typeof window !== 'undefined' ? window.innerWidth / 2 : 0, 
@@ -31,272 +37,245 @@ export default function CursorEffect3D({
   const [particles, setParticles] = useState<Array<{ x: number; y: number; z: number; color: string; size: number; initialX: number; initialY: number }>>([]);
   const [isMoving, setIsMoving] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const lastUpdateTimeRef = useRef(Date.now());
-  const rafRef = useRef<number | null>(null);
-  
-  // Use appropriate color palette based on theme
-  const colorPalette = isDarkMode ? darkColorPalette : lightColorPalette;
-  
-  // Create new particles with the given palette with smooth initial positions
-  const createNewParticles = (palette: string[]) => {
-    const newParticles = [];
-    for (let i = 0; i < particleCount; i++) {
-      const initialX = Math.random() * window.innerWidth;
-      const initialY = Math.random() * window.innerHeight;
-      
-      newParticles.push({
-        x: initialX,
-        y: initialY,
-        z: Math.random() * 100,
-        color: palette[Math.floor(Math.random() * palette.length)],
-        size: Math.random() * particleSize + particleSize / 2,
-        initialX,
-        initialY
-      });
-    }
-    return newParticles;
-  };
-  
-  // Initialize component and handle SSR
+  const lastFrameTimeRef = useRef(0);
+  const requestRef = useRef<number>();
+
+  // Initialize on mount
   useEffect(() => {
     setMounted(true);
-    
-    // Initialize particles with center mouse position to avoid jumpy starts
-    setMousePosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
-    prevThemeRef.current = isDarkMode;
-    setThemeKey(isDarkMode ? 'dark' : 'light');
-    
-    // Initialize particles
-    setParticles(createNewParticles(colorPalette));
-    
-    // Clean up animation frame on unmount
+    // Initial particles setup
+    const colorPalette = isDarkMode ? darkColorPalette : lightColorPalette;
+    const newParticles = createNewParticles(colorPalette);
+    setParticles(newParticles);
     return () => {
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
+      if (requestRef.current) {
+        cancelAnimationFrame(requestRef.current);
       }
     };
-  }, []);
-  
-  // Animate particles using requestAnimationFrame for smoother animation
+  }, [mounted]);
+
+  // Theme effect
+  useEffect(() => {
+    if (!mounted) return;
+    
+    console.log('Theme changed in CursorEffect3D:', isDarkMode ? 'dark' : 'light');
+    setThemeKey(isDarkMode ? 'dark' : 'light');
+
+    // Create entirely new particles when theme changes to ensure correct colors
+    const colors = isDarkMode ? darkColorPalette : lightColorPalette;
+    const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1000;
+    const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
+    
+    const newParticles = Array.from({ length: particleCount }, () => {
+      const x = Math.random() * viewportWidth;
+      const y = Math.random() * viewportHeight;
+      const z = Math.random() * 100 - 50;
+      return {
+        x,
+        y, 
+        z,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        size: Math.random() * 3 + (particleSize || 8),
+        initialX: x,
+        initialY: y
+      };
+    });
+    
+    setParticles(newParticles);
+    
+    // Force a state update to trigger re-render with new colors
+    setThemeKey(prevKey => prevKey === 'dark' ? 'dark-update' : 'light-update');
+    
+  }, [isDarkMode, darkColorPalette, lightColorPalette, particleCount, mounted, particleSize]);
+
+  // Create new particles function
+  const createNewParticles = (palette: string[]) => {
+    if (typeof window === 'undefined') return [];
+    
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    return Array.from({ length: particleCount }, () => {
+      const x = Math.random() * viewportWidth;
+      const y = Math.random() * viewportHeight;
+      const z = Math.random() * 100 - 50;
+      
+      return {
+        x,
+        y,
+        z,
+        color: palette[Math.floor(Math.random() * palette.length)],
+        size: Math.random() * 3 + particleSize,
+        initialX: x,
+        initialY: y
+      };
+    });
+  };
+
+  // Mouse movement handling with debounce for performance
+  useEffect(() => {
+    if (!mounted) return;
+    
+    const handleMouseMove = (event: MouseEvent) => {
+      setMousePosition({ x: event.clientX, y: event.clientY });
+      setIsMoving(true);
+      
+      // Debounce the isMoving state
+      if (typeof window !== 'undefined') {
+        window.clearTimeout(window.cursorEffectTimeout);
+        window.cursorEffectTimeout = window.setTimeout(() => {
+          setIsMoving(false);
+        }, 100);
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('mousemove', handleMouseMove);
+      return () => {
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.clearTimeout(window.cursorEffectTimeout);
+      };
+    }
+    return undefined;
+  }, [mounted]);
+
+  // Animation frame for smooth particle movement
   useEffect(() => {
     if (!mounted) return;
     
     const updateParticles = () => {
-      // Use time-based animation for consistent speed regardless of frame rate
-      const now = Date.now();
-      const deltaTime = (now - lastUpdateTimeRef.current) / 16; // normalize to ~60fps
-      lastUpdateTimeRef.current = now;
+      const currentTime = performance.now();
+      const deltaTime = (currentTime - lastFrameTimeRef.current) / 16.67; // Normalize to ~60fps
+      lastFrameTimeRef.current = currentTime;
       
-      setParticles(prev => {
-        return prev.map(particle => {
-          // Calculate distance from cursor to particle
+      if (deltaTime === 0 || !particles.length) return;
+      
+      // Use time-based animation for smooth movement
+      setParticles(prevParticles => {
+        return prevParticles.map(particle => {
+          // Calculate distance to mouse
           const dx = mousePosition.x - particle.x;
           const dy = mousePosition.y - particle.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
           
-          // Smooth particle movement
           if (distance < maxDistance) {
-            // Use inverse square law for attraction/repulsion effect with smoother transitions
-            const force = (maxDistance - distance) / maxDistance;
+            // Attraction force - stronger when closer to mouse
+            const force = (1 - distance / maxDistance) * 0.2;
             
-            // Light mode has gentler, more spread out effect
-            const forceFactor = isDarkMode ? 0.03 : 0.02;
-            const depthFactor = isDarkMode ? 4 : 6;
+            // Return to initial position when not moving
+            const returnForce = isMoving ? 0 : 0.05;
             
-            // Apply smooth movement with delta time
+            // Calculate new position with smooth lerping
+            const newX = particle.x + dx * force * deltaTime * 0.06;
+            const newY = particle.y + dy * force * deltaTime * 0.06;
+            
+            // Add return-to-initial-position behavior
+            const returnX = particle.initialX - particle.x;
+            const returnY = particle.initialY - particle.y;
+            
             return {
               ...particle,
-              x: particle.x - (dx * force * forceFactor * deltaTime),
-              y: particle.y - (dy * force * forceFactor * deltaTime),
-              z: particle.z + force * depthFactor * 0.5 * deltaTime,
-              initialX: particle.initialX,
-              initialY: particle.initialY
+              x: newX + returnX * returnForce,
+              y: newY + returnY * returnForce
             };
           }
           
-          // Gradually return to initial position when not influenced
-          const returnFactor = 0.02 * deltaTime;
-          const jitterFactor = 0.2 * deltaTime;
+          // Return to initial position if far from mouse
+          if (!isMoving) {
+            const returnX = particle.initialX - particle.x;
+            const returnY = particle.initialY - particle.y;
+            const returnForce = 0.03;
+            
+            return {
+              ...particle,
+              x: particle.x + returnX * returnForce * deltaTime,
+              y: particle.y + returnY * returnForce * deltaTime
+            };
+          }
           
-          return {
-            ...particle,
-            x: particle.x + ((particle.initialX - particle.x) * returnFactor) + ((Math.random() - 0.5) * jitterFactor),
-            y: particle.y + ((particle.initialY - particle.y) * returnFactor) + ((Math.random() - 0.5) * jitterFactor),
-            z: particle.z > 0 ? particle.z - (0.3 * deltaTime) : 0,
-            initialX: particle.initialX,
-            initialY: particle.initialY
-          };
+          return particle;
         });
       });
       
-      rafRef.current = requestAnimationFrame(updateParticles);
+      requestRef.current = requestAnimationFrame(updateParticles);
     };
     
-    rafRef.current = requestAnimationFrame(updateParticles);
+    lastFrameTimeRef.current = performance.now();
+    requestRef.current = requestAnimationFrame(updateParticles);
     
     return () => {
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
+      if (requestRef.current) {
+        cancelAnimationFrame(requestRef.current);
       }
     };
-  }, [maxDistance, mounted, isDarkMode, mousePosition]);
-  
-  // Handle mouse movement with debouncing to prevent too many updates
-  useEffect(() => {
-    if (!mounted) return;
-    
-    let debounceTimeout: NodeJS.Timeout;
-    
-    const handleMouseMove = (event: MouseEvent) => {
-      // Smooth mouse position updates with lerping
-      setMousePosition(prev => ({
-        x: prev.x + (event.clientX - prev.x) * 0.2,
-        y: prev.y + (event.clientY - prev.y) * 0.2
-      }));
-      
-      setIsMoving(true);
-      
-      // Reset the moving state after some time of inactivity
-      clearTimeout(debounceTimeout);
-      debounceTimeout = setTimeout(() => {
-        setIsMoving(false);
-      }, 150);
-    };
-    
-    window.addEventListener('mousemove', handleMouseMove);
-    
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      clearTimeout(debounceTimeout);
-    };
-  }, [mounted]);
-  
-  // Update particles COMPLETELY when theme changes
-  useEffect(() => {
-    if (!mounted) return;
-    
-    // Check if dark mode actually changed
-    if (prevThemeRef.current !== isDarkMode) {
-      prevThemeRef.current = isDarkMode;
-      setThemeKey(isDarkMode ? 'dark' : 'light');
-      
-      // Create entirely new set of particles with new theme colors
-      // Keep current mouse position to avoid jumps
-      const newParticles = createNewParticles(colorPalette);
-      setParticles(newParticles);
-    }
-  }, [isDarkMode, colorPalette, mounted, particleCount, particleSize]);
-  
+  }, [maxDistance, mousePosition, particles.length, isMoving, mounted]);
+
   // If not mounted yet (SSR), don't render anything
-  if (!mounted) return null;
-  
-  // Force a full re-render when theme changes by using a key
+  if (!mounted) {
+    return null;
+  }
+
+  // Current color palette based on theme
+  const colorPalette = isDarkMode ? darkColorPalette : lightColorPalette;
+
   return (
     <div 
-      key={themeKey}
-      className="fixed inset-0 pointer-events-none overflow-hidden z-10" 
+      className="fixed top-0 left-0 w-full h-full pointer-events-none z-10" 
+      style={{ overflow: 'hidden' }}
       aria-hidden="true"
-      id={`cursor-effect-${themeKey}`}
     >
-      {/* Main cursor glow - larger in light mode for more coverage */}
+      {/* Main cursor element */}
       <motion.div
-        className={`rounded-full absolute filter blur-[50px] mix-blend-screen ${
-          isDarkMode ? 'w-[200px] h-[200px] opacity-30' : 'w-[300px] h-[300px] opacity-20'
-        }`}
+        className="absolute rounded-full pointer-events-none z-50"
         animate={{
-          x: mousePosition.x - (isDarkMode ? 100 : 150),
-          y: mousePosition.y - (isDarkMode ? 100 : 150),
-          scale: isMoving ? 1.2 : 1,
-        }}
-        transition={{
-          type: "spring",
-          damping: 25,
-          stiffness: 120,
-          mass: 1.2
-        }}
-        style={{
-          background: `radial-gradient(circle, ${colorPalette[0]} 0%, ${colorPalette[1]} 50%, transparent 80%)`,
-        }}
-      />
-      
-      {/* Secondary glow for light mode only - creates a smoky effect */}
-      {!isDarkMode && (
-        <motion.div
-          className="w-[500px] h-[500px] rounded-full absolute filter blur-[100px] opacity-10 mix-blend-multiply"
-          animate={{
-            x: mousePosition.x - 250,
-            y: mousePosition.y - 250,
-            scale: isMoving ? 1.3 : 1.1,
-          }}
-          transition={{
-            type: "spring",
-            damping: 35,
-            stiffness: 80,
-            mass: 2.0
-          }}
-          style={{
-            background: `radial-gradient(circle, ${colorPalette[1]} 0%, ${colorPalette[3]} 60%, transparent 85%)`,
-          }}
-        />
-      )}
-      
-      {/* 3D particles */}
-      {particles.map((particle, index) => {
-        // Calculate opacity based on z-depth for 3D effect
-        const depthOpacity = (100 - particle.z) / 100 * particleOpacity;
-        const scale = (100 - particle.z) / 100; // Smaller as it goes "deeper"
-        
-        // Light mode particles have more blur for a smoky effect
-        const blurAmount = isDarkMode ? particle.z / 50 : particle.z / 30;
-        const shadowSize = isDarkMode ? particle.size / 2 : particle.size;
-        
-        return (
-          <motion.div
-            key={`${themeKey}-particle-${index}`}
-            className="absolute rounded-full mix-blend-screen"
-            style={{
-              backgroundColor: particle.color,
-              width: `${particle.size}px`,
-              height: `${particle.size}px`,
-              opacity: depthOpacity,
-              filter: `blur(${blurAmount}px)`,
-              boxShadow: `0 0 ${shadowSize}px ${particle.color}`,
-              zIndex: Math.floor(100 - particle.z),
-            }}
-            animate={{
-              x: particle.x - (particle.size / 2),
-              y: particle.y - (particle.size / 2),
-              scale: scale,
-            }}
-            transition={{
-              type: "spring",
-              damping: 30,
-              stiffness: 80,
-              mass: 0.8
-            }}
-          />
-        );
-      })}
-      
-      {/* Core cursor dot for precise tracking */}
-      <motion.div
-        className={`rounded-full absolute ${isDarkMode ? 'w-4 h-4' : 'w-5 h-5'}`}
-        animate={{
-          x: mousePosition.x - (isDarkMode ? 8 : 10),
-          y: mousePosition.y - (isDarkMode ? 8 : 10),
-          scale: isMoving ? 0.5 : 1,
+          x: mousePosition.x - 16,
+          y: mousePosition.y - 16,
+          scale: isMoving ? 0.8 : 1,
         }}
         transition={{
           type: "spring",
           damping: 15,
-          stiffness: 100,
-          mass: 0.6
+          stiffness: 150,
+          mass: 0.1
         }}
         style={{
-          background: `radial-gradient(circle, white 0%, ${colorPalette[0]} 80%)`,
-          boxShadow: `0 0 10px ${colorPalette[0]}`,
+          width: 32,
+          height: 32,
+          backgroundColor: colorPalette[0],
+          opacity: particleOpacity + 0.2,
+          boxShadow: `0 0 20px ${colorPalette[0]}`,
         }}
       />
+      
+      {/* Particles that follow the cursor */}
+      <div className="absolute top-0 left-0 w-full h-full">
+        {particles.map((particle, index) => (
+          <motion.div
+            key={`${themeKey}-particle-${index}`}
+            className="absolute rounded-full"
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ 
+              opacity: particleOpacity,
+              scale: 1,
+              x: particle.x - particle.size / 2,
+              y: particle.y - particle.size / 2,
+            }}
+            transition={{
+              type: "spring",
+              damping: 20,
+              stiffness: 100,
+              mass: 0.3 + Math.random() * 0.5,
+            }}
+            style={{
+              width: particle.size,
+              height: particle.size,
+              backgroundColor: particle.color,
+              boxShadow: `0 0 ${particle.size * 2}px ${particle.color}`,
+              zIndex: Math.floor(particle.z) + 20
+            }}
+          />
+        ))}
+      </div>
     </div>
   );
 } 

@@ -1,14 +1,16 @@
 'use client';
 
-import { useEffect, createContext, useState } from 'react';
+import React from 'react';
 import { getStoredTheme, ThemeMode } from '../utils/theme';
 
-// Create theme context
-export const ThemeContext = createContext<{
+type ThemeContextType = {
   theme: ThemeMode;
   setTheme: (theme: ThemeMode) => void;
   isDarkMode: boolean;
-}>({
+};
+
+// Create theme context
+export const ThemeContext = React.createContext<ThemeContextType>({
   theme: 'system',
   setTheme: () => {},
   isDarkMode: false,
@@ -22,11 +24,11 @@ interface ThemeProviderProps {
  * ThemeProvider initializes the theme based on user preferences
  * and provides theme context to the application
  */
-const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const [theme, setThemeState] = useState<ThemeMode>('system');
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const [themeChangeTimestamp, setThemeChangeTimestamp] = useState(0);
+const ThemeProvider = ({ children }: ThemeProviderProps) => {
+  const [theme, setThemeState] = React.useState<ThemeMode>('system');
+  const [isDarkMode, setIsDarkMode] = React.useState(false);
+  const [mounted, setMounted] = React.useState(false);
+  const [themeChangeTimestamp, setThemeChangeTimestamp] = React.useState(0);
 
   // The setTheme function that components will use
   const setTheme = (newTheme: ThemeMode) => {
@@ -51,7 +53,7 @@ const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   };
 
   // Initialize theme from localStorage or system preference
-  useEffect(() => {
+  React.useEffect(() => {
     try {
       // Don't do anything on the server
       setMounted(true);
@@ -85,7 +87,7 @@ const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   }, []);
 
   // Apply theme effect whenever theme changes
-  useEffect(() => {
+  React.useEffect(() => {
     if (!mounted) return;
 
     try {
@@ -118,7 +120,7 @@ const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   }, [theme, mounted, themeChangeTimestamp]);
   
   // Watch for system theme changes
-  useEffect(() => {
+  React.useEffect(() => {
     if (!mounted || theme !== 'system') return;
 
     try {

@@ -2,11 +2,27 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ['via.placeholder.com', 'placehold.co'],
+    remotePatterns: [
+      { hostname: 'via.placeholder.com' },
+      { hostname: 'placehold.co' }
+    ],
     formats: ['image/avif', 'image/webp'],
-    unoptimized: true,
+    unoptimized: process.env.NODE_ENV === 'development',
   },
-  output: 'export',
+  // Only use export in production to allow dev server to work properly
+  output: process.env.NODE_ENV === 'production' ? 'export' : undefined,
+  
+  // Enable error checking during build
+  typescript: {
+    ignoreBuildErrors: false,
+  },
+  eslint: {
+    ignoreDuringBuilds: false,
+  },
+  // Set trailing slash for better compatibility with static hosts
+  trailingSlash: true,
+  // Make sure we generate the correct asset paths
+  assetPrefix: process.env.NODE_ENV === 'production' ? '/' : undefined,
 }
 
 module.exports = nextConfig 

@@ -2,9 +2,9 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import '../styles/dark-mode-fix.css';
-import Navbar from '../components/ui/Navbar';
-import Footer from '../components/ui/Footer';
-import ThemeProvider from '../components/ThemeProvider';
+import Navbar from '@/components/ui/Navbar';
+import Footer from '@/components/ui/Footer';
+import ThemeProvider from '@/components/ThemeProvider';
 
 // Load Inter font
 const inter = Inter({ 
@@ -19,6 +19,7 @@ export const metadata: Metadata = {
   authors: [{ name: 'David Podeweltz' }],
 };
 
+// Define viewport separately according to Next.js warnings
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
