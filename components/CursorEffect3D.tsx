@@ -24,7 +24,10 @@ export default function CursorEffect3D({
   const { isDarkMode } = useTheme();
   const prevThemeRef = useRef(isDarkMode);
   const [themeKey, setThemeKey] = useState(isDarkMode ? 'dark' : 'light');
-  const [mousePosition, setMousePosition] = useState({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+  const [mousePosition, setMousePosition] = useState({ 
+    x: typeof window !== 'undefined' ? window.innerWidth / 2 : 0, 
+    y: typeof window !== 'undefined' ? window.innerHeight / 2 : 0 
+  });
   const [particles, setParticles] = useState<Array<{ x: number; y: number; z: number; color: string; size: number; initialX: number; initialY: number }>>([]);
   const [isMoving, setIsMoving] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -286,7 +289,7 @@ export default function CursorEffect3D({
         transition={{
           type: "spring",
           damping: 15,
-          stiffness: 300,
+          stiffness: 100,
           mass: 0.6
         }}
         style={{

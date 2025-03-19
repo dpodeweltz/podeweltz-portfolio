@@ -4,6 +4,7 @@ const nextConfig = {
   images: {
     domains: ['via.placeholder.com', 'placehold.co'],
     formats: ['image/avif', 'image/webp'],
+    unoptimized: true,
   },
   output: 'export',
 }
