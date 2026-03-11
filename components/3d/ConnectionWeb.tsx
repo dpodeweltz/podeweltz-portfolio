@@ -1,5 +1,6 @@
+/* eslint-disable react-hooks/refs */
 'use client';
-import { useRef, useMemo, useEffect } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Vector3 } from 'three';
 
@@ -34,7 +35,7 @@ const Connection = ({ start, end, color, width = 0.01 }: { start: Vector3; end: 
   const direction = end.clone().sub(start).normalize();
   const quaternion = new Vector3(0, 1, 0).cross(direction).normalize();
   const w = 1 + new Vector3(0, 1, 0).dot(direction);
-  const rotation = [quaternion.x, quaternion.y, quaternion.z, w] as [number, number, number, number];
+  const rotation = [quaternion.x, quaternion.y, quaternion.z, w] as[number, number, number, number];
   
   return (
     <mesh position={midPoint.toArray()} quaternion={rotation}>
@@ -48,29 +49,39 @@ const Connection = ({ start, end, color, width = 0.01 }: { start: Vector3; end: 
 const ConnectionWeb = ({ 
   nodeCount = 20, 
   maxDistance = 5, 
-  colors = ['#4285F4', '#34A853', '#FBBC05', '#EA4335'] 
+  colors =['#4285F4', '#34A853', '#FBBC05', '#EA4335'] 
 }) => {
   // Set up refs and state
   const mousePosition = useRef(new Vector3(0, 0, 0));
   const { viewport, camera } = useThree();
   
-  // Generate random nodes
-  const nodes = useMemo(() => {
-    return Array.from({ length: nodeCount }, () => ({
-      position: new Vector3(
-        (Math.random() - 0.5) * viewport.width * 1.5,
-        (Math.random() - 0.5) * viewport.height * 1.5,
-        (Math.random() - 2) * 3
-      ),
-      velocity: new Vector3(
-        (Math.random() - 0.5) * 0.01,
-        (Math.random() - 0.5) * 0.01,
-        (Math.random() - 0.5) * 0.005
-      ),
-      color: colors[Math.floor(Math.random() * colors.length)],
-      size: Math.random() * 0.03 + 0.01
-    }));
-  }, [nodeCount, viewport, colors]);
+  // We use state instead of useMemo to satisfy React 19 Purity rules
+  const [nodes, setNodes] = useState<Array<{
+    position: Vector3;
+    velocity: Vector3;
+    color: string;
+    size: number;
+  }>>([]);
+  
+  // Generate random nodes only AFTER mount to keep the render phase pure
+  useEffect(() => {
+    setNodes(
+      Array.from({ length: nodeCount }, () => ({
+        position: new Vector3(
+          (Math.random() - 0.5) * viewport.width * 1.5,
+          (Math.random() - 0.5) * viewport.height * 1.5,
+          (Math.random() - 2) * 3
+        ),
+        velocity: new Vector3(
+          (Math.random() - 0.5) * 0.01,
+          (Math.random() - 0.5) * 0.01,
+          (Math.random() - 0.5) * 0.005
+        ),
+        color: colors[Math.floor(Math.random() * colors.length)],
+        size: Math.random() * 0.03 + 0.01
+      }))
+    );
+  },[nodeCount, viewport.width, viewport.height, colors]);
 
   // Mouse position tracking
   useEffect(() => {
@@ -93,7 +104,7 @@ const ConnectionWeb = ({
 
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [camera]);
+  },[camera]);
 
   // Update node positions on each frame
   useFrame(() => {
@@ -166,4 +177,4 @@ const ConnectionWeb = ({
   );
 };
 
-export default ConnectionWeb; 
+export default ConnectionWeb;

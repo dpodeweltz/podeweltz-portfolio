@@ -77,9 +77,13 @@ export const initTheme = (): void => {
   }
 };
 
-export default {
+// FIX: Assigned the object to a named variable before exporting 
+// to satisfy import/no-anonymous-default-export
+const themeUtils = {
   getStoredTheme,
   setTheme,
   applyTheme,
   initTheme,
-}; 
+};
+
+export default themeUtils;

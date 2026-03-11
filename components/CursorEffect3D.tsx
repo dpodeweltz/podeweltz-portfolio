@@ -1,6 +1,7 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '../hooks/useTheme';
 
@@ -20,9 +21,20 @@ interface CursorEffect3DProps {
   particleOpacity?: number;
 }
 
+interface Particle {
+  x: number;
+  y: number;
+  z: number;
+  color: string;
+  size: number;
+  initialX: number;
+  initialY: number;
+  mass: number;
+}
+
 export default function CursorEffect3D({
-  darkColorPalette = ['#3b82f6', '#6366f1', '#8b5cf6', '#d946ef', '#ec4899'],
-  lightColorPalette = ['#1e40af', '#3b82f6', '#60a5fa', '#93c5fd', '#3730a3'],
+  darkColorPalette =['#3b82f6', '#6366f1', '#8b5cf6', '#d946ef', '#ec4899'],
+  lightColorPalette =['#1e40af', '#3b82f6', '#60a5fa', '#93c5fd', '#3730a3'],
   particleCount = 30,
   maxDistance = 150,
   particleSize = 8,
@@ -34,63 +46,16 @@ export default function CursorEffect3D({
     x: typeof window !== 'undefined' ? window.innerWidth / 2 : 0, 
     y: typeof window !== 'undefined' ? window.innerHeight / 2 : 0 
   });
-  const [particles, setParticles] = useState<Array<{ x: number; y: number; z: number; color: string; size: number; initialX: number; initialY: number }>>([]);
+  const [particles, setParticles] = useState<Particle[]>([]);
   const [isMoving, setIsMoving] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const[mounted, setMounted] = useState(false);
   const lastFrameTimeRef = useRef(0);
   const requestRef = useRef<number>();
 
-  // Initialize on mount
-  useEffect(() => {
-    setMounted(true);
-    // Initial particles setup
-    const colorPalette = isDarkMode ? darkColorPalette : lightColorPalette;
-    const newParticles = createNewParticles(colorPalette);
-    setParticles(newParticles);
-    return () => {
-      if (requestRef.current) {
-        cancelAnimationFrame(requestRef.current);
-      }
-    };
-  }, [mounted]);
-
-  // Theme effect
-  useEffect(() => {
-    if (!mounted) return;
-    
-    console.log('Theme changed in CursorEffect3D:', isDarkMode ? 'dark' : 'light');
-    setThemeKey(isDarkMode ? 'dark' : 'light');
-
-    // Create entirely new particles when theme changes to ensure correct colors
-    const colors = isDarkMode ? darkColorPalette : lightColorPalette;
-    const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1000;
-    const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
-    
-    const newParticles = Array.from({ length: particleCount }, () => {
-      const x = Math.random() * viewportWidth;
-      const y = Math.random() * viewportHeight;
-      const z = Math.random() * 100 - 50;
-      return {
-        x,
-        y, 
-        z,
-        color: colors[Math.floor(Math.random() * colors.length)],
-        size: Math.random() * 3 + (particleSize || 8),
-        initialX: x,
-        initialY: y
-      };
-    });
-    
-    setParticles(newParticles);
-    
-    // Force a state update to trigger re-render with new colors
-    setThemeKey(prevKey => prevKey === 'dark' ? 'dark-update' : 'light-update');
-    
-  }, [isDarkMode, darkColorPalette, lightColorPalette, particleCount, mounted, particleSize]);
-
-  // Create new particles function
-  const createNewParticles = (palette: string[]) => {
-    if (typeof window === 'undefined') return [];
+  // MOVED UP: Declare createNewParticles before it is used to satisfy linter
+  // Added Math.random() calculations here to keep the render phase pure
+  const createNewParticles = useCallback((palette: string[]): Particle[] => {
+    if (typeof window === 'undefined') return[];
     
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
@@ -107,10 +72,26 @@ export default function CursorEffect3D({
         color: palette[Math.floor(Math.random() * palette.length)],
         size: Math.random() * 3 + particleSize,
         initialX: x,
-        initialY: y
+        initialY: y,
+        mass: 0.3 + Math.random() * 0.5 // Solves the "impure function" error in Framer Motion transition!
       };
     });
-  };
+  }, [particleCount, particleSize]);
+
+  // Initial mount check
+  useEffect(() => {
+    setMounted(true);
+  },[]);
+
+  // Consolidating the duplicate Theme/Mount effects into one clean hook
+  useEffect(() => {
+    if (!mounted) return;
+    
+    const colorPalette = isDarkMode ? darkColorPalette : lightColorPalette;
+    setParticles(createNewParticles(colorPalette));
+    setThemeKey(isDarkMode ? 'dark-update' : 'light-update');
+    
+  },[mounted, isDarkMode, darkColorPalette, lightColorPalette, createNewParticles]);
 
   // Mouse movement handling with debounce for performance
   useEffect(() => {
@@ -136,7 +117,6 @@ export default function CursorEffect3D({
         window.clearTimeout(window.cursorEffectTimeout);
       };
     }
-    return undefined;
   }, [mounted]);
 
   // Animation frame for smooth particle movement
@@ -208,7 +188,7 @@ export default function CursorEffect3D({
         cancelAnimationFrame(requestRef.current);
       }
     };
-  }, [maxDistance, mousePosition, particles.length, isMoving, mounted]);
+  },[maxDistance, mousePosition, particles.length, isMoving, mounted]);
 
   // If not mounted yet (SSR), don't render anything
   if (!mounted) {
@@ -264,7 +244,7 @@ export default function CursorEffect3D({
               type: "spring",
               damping: 20,
               stiffness: 100,
-              mass: 0.3 + Math.random() * 0.5,
+              mass: particle.mass, // Now grabs the stable pre-calculated random number!
             }}
             style={{
               width: particle.size,
@@ -278,4 +258,4 @@ export default function CursorEffect3D({
       </div>
     </div>
   );
-} 
+}

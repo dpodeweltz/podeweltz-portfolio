@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "export": "next build && next export",
-    "lint": "next lint",
+    "lint": "eslint .",
     "deploy": "cross-env NODE_ENV=production npm run build && npm run analyze",
     "analyze": "cross-env ANALYZE=true next build",
     "clean": "rimraf .next out"
@@ -20,7 +20,7 @@
     "emailjs-com": "^3.2.0",
     "express": "^4.21.2",
     "framer-motion": "^10.18.0",
-    "next": "^15.2.3",
+    "next": "^16.1.6",
     "react": "^18",
     "react-dom": "^18",
     "resend": "^4.3.0",
@@ -32,8 +32,8 @@
     "@types/react-dom": "^18",
     "@types/three": "^0.158.3",
     "autoprefixer": "^10.4.16",
-    "eslint": "^8",
-    "eslint-config-next": "14.2.2",
+    "eslint": "^9.39.4",
+    "eslint-config-next": "^16.1.6",
     "postcss": "^8.4.31",
     "tailwindcss": "^3.3.5",
     "typescript": "^5"

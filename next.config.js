@@ -1,28 +1,23 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  
+  // Keep your image domains so placeholders don't break
   images: {
-    remotePatterns: [
+    remotePatterns:[
       { hostname: 'via.placeholder.com' },
       { hostname: 'placehold.co' }
     ],
-    formats: ['image/avif', 'image/webp'],
+    formats:['image/avif', 'image/webp'],
     unoptimized: process.env.NODE_ENV === 'development',
   },
-  // Only use export in production to allow dev server to work properly
-  output: process.env.NODE_ENV === 'production' ? 'export' : undefined,
   
-  // Enable error checking during build
+  // Keep TypeScript strictness during build
   typescript: {
     ignoreBuildErrors: false,
   },
-  eslint: {
-    ignoreDuringBuilds: false,
-  },
-  // Set trailing slash for better compatibility with static hosts
-  trailingSlash: true,
-  // Make sure we generate the correct asset paths
-  assetPrefix: process.env.NODE_ENV === 'production' ? '/' : undefined,
+
+  // Notice we removed 'output: export', 'eslint', 'trailingSlash', and 'assetPrefix'!
 }
 
-module.exports = nextConfig 
+module.exports = nextConfig;
