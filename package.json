@@ -20,7 +20,7 @@
     "emailjs-com": "^3.2.0",
     "express": "^4.21.2",
     "framer-motion": "^10.18.0",
-    "next": "^15.2.3",
+    "next": "15.2.8",
     "react": "^18",
     "react-dom": "^18",
     "resend": "^4.3.0",
